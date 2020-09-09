@@ -1724,7 +1724,6 @@ class Unit : public WorldObject
         bool IsValidAssistTarget(Unit const* target) const;
         bool _IsValidAssistTarget(Unit const* target, SpellInfo const* bySpell) const;
 
-        void UpdateEnvironmentIfNeeded(const uint8 option);
         virtual bool IsInWater(bool allowAbove = false) const;
         virtual bool IsUnderWater() const;
         virtual void UpdateUnderwaterState(Map* m, float x, float y, float z);
@@ -2401,13 +2400,6 @@ class Unit : public WorldObject
         bool bRequestForcedVisibilityUpdate;
         void ExecuteDelayedUnitRelocationEvent();
         void ExecuteDelayedUnitAINotifyEvent();
-        // IsInWater, UpdateUnderwaterState, etc. optimizations
-        Position m_last_underwaterstate_position;
-        Position m_last_environment_position;
-        bool m_last_isinwater_status;
-        bool m_last_islittleabovewater_status;
-        bool m_last_isunderwater_status;
-        bool m_is_updating_environment;
         // GetZone / GetArea optimization
         Position m_last_area_position;
         Position m_last_zone_position;

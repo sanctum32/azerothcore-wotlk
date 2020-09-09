@@ -1181,8 +1181,6 @@ class Player : public Unit, public GridObject<Player>
 
         void SetInWater(bool apply);
 
-        bool IsInWater(bool allowAbove = false) const override;
-        bool IsUnderWater() const override;
         bool IsFalling() const;
         bool IsInAreaTriggerRadius(const AreaTrigger* trigger) const;
 

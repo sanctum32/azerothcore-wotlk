@@ -2941,30 +2941,6 @@ GameObject* Player::GetGameObjectIfCanInteractWith(uint64 guid, GameobjectTypes 
     return nullptr;
 }
 
-bool Player::IsInWater(bool allowAbove) const
-{
-    if (m_isInWater || !allowAbove)
-        return m_isInWater;
-
-    float distsq = GetExactDistSq(&m_last_environment_position);
-    if (distsq < 3.0f*3.0f)
-        return m_last_islittleabovewater_status;
-    else
-    {
-        LiquidData liqData; liqData.level = INVALID_HEIGHT;
-        const_cast<Position*>(&m_last_environment_position)->Relocate(GetPositionX(), GetPositionY(), GetPositionZ());
-        bool inWater = GetBaseMap()->IsInWater(GetPositionX(), GetPositionY(), GetPositionZ(), &liqData);
-        *(const_cast<bool*>(&m_last_islittleabovewater_status)) = inWater || (liqData.level > INVALID_HEIGHT && liqData.level > liqData.depth_level && liqData.level <= GetPositionZ()+3.0f && liqData.level > GetPositionZ()-1.0f);
-        return m_last_islittleabovewater_status;
-    }
-}
-
-bool Player::IsUnderWater() const
-{
-    return IsInWater() &&
-        GetPositionZ() < (GetBaseMap()->GetWaterLevel(GetPositionX(), GetPositionY())-2);
-}
-
 bool Player::IsFalling() const
 {
     // Xinef: Added !IsInFlight check
@@ -24560,11 +24536,6 @@ void Player::SetOriginalGroup(Group* group, int8 subgroup)
 
 void Player::UpdateUnderwaterState(Map* m, float x, float y, float z)
 {
-    // pussywizard: optimization
-    if (GetExactDistSq(&m_last_underwaterstate_position) < 3.0f*3.0f)
-        return;
-    m_last_underwaterstate_position.Relocate(m_positionX, m_positionY, m_positionZ);
-
     if (!IsPositionValid()) // pussywizard: crashfix if calculated grid coords would be out of range 0-64
         return;
 

@@ -480,8 +480,6 @@ bool Creature::UpdateEntry(uint32 Entry, const CreatureData* data, bool changele
         ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_ATTACK_ME, true);
     }
 
-    UpdateEnvironmentIfNeeded(3);
-
     return true;
 }
 
@@ -494,6 +492,8 @@ void Creature::Update(uint32 diff)
         if (m_vehicleKit)
             m_vehicleKit->Reset();
     }
+
+    UpdateMovementFlags();
 
     switch (m_deathState)
     {
@@ -873,6 +873,7 @@ bool Creature::Create(uint32 guidlow, Map* map, uint32 phaseMask, uint32 Entry, 
             break;
     }
 
+    UpdateMovementFlags();
     LoadCreaturesAddon();
 
     uint32 displayID = GetNativeDisplayId();
@@ -1591,7 +1592,6 @@ void Creature::setDeathState(DeathState s, bool despawn)
         // pussywizard:
         if (HasUnitMovementFlag(MOVEMENTFLAG_FALLING))
             RemoveUnitMovementFlag(MOVEMENTFLAG_FALLING);
-        UpdateEnvironmentIfNeeded(3);
 
         SetUInt32Value(UNIT_NPC_FLAGS, cinfo->npcflag);
         ClearUnitState(uint32(UNIT_STATE_ALL_STATE & ~(UNIT_STATE_IGNORE_PATHFINDING | UNIT_STATE_NO_ENVIRONMENT_UPD)));
@@ -2434,6 +2434,43 @@ void Creature::GetRespawnPosition(float &x, float &y, float &z, float* ori, floa
     }
     if (dist)
         *dist = 0;
+}
+
+void Creature::UpdateMovementFlags()
+{
+    // Do not update movement flags if creature is controlled by a player (charm/vehicle)
+    if (IsControlledByPlayer())
+        return;
+
+    // Creatures with CREATURE_FLAG_EXTRA_NO_MOVE_FLAGS_UPDATE should control MovementFlags in your own scripts
+    if (GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_NO_MOVE_FLAGS_UPDATE)
+        return;
+
+    // Set the movement flags if the creature is in that mode. (Only fly if actually in air, only swim if in water, etc)
+    float ground = GetFloorZ();
+
+    bool isInAir = (G3D::fuzzyGt(GetPositionZ(), ground + (IsHovering() ? GetFloatValue(UNIT_FIELD_HOVERHEIGHT) : 0.0f) + 0.5f) || G3D::fuzzyLt(GetPositionZ(), ground - 0.5f)); // Can be underground too, prevent the falling
+
+    if ((GetCreatureTemplate()->InhabitType & INHABIT_AIR) && isInAir && !IsFalling())
+    {
+        if (GetCreatureTemplate()->InhabitType & INHABIT_GROUND)
+            SetCanFly(true);
+        else
+            SetDisableGravity(true);
+
+        if (!HasAuraType(SPELL_AURA_HOVER))
+            SetHover(false);
+    }
+    else
+    {
+        SetCanFly(false);
+        SetDisableGravity(false);
+    }
+
+    if (!isInAir)
+        RemoveUnitMovementFlag(MOVEMENTFLAG_FALLING);
+
+    SetSwim((GetCreatureTemplate()->InhabitType & INHABIT_WATER) && IsInWater());
 }
 
 void Creature::AllLootRemovedFromCorpse()

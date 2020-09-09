@@ -27,7 +27,6 @@ void HomeMovementGenerator<Creature>::DoFinalize(Creature* owner)
         owner->AI()->JustReachedHome();
     }
     owner->m_targetsNotAcceptable.clear();
-    owner->UpdateEnvironmentIfNeeded(2);
 }
 
 void HomeMovementGenerator<Creature>::DoReset(Creature*)

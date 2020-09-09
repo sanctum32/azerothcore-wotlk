@@ -3078,3 +3078,37 @@ uint64 WorldObject::GetTransGUID() const
         return GetTransport()->GetGUID();
     return 0;
 }
+
+float WorldObject::GetFloorZ()
+{
+    if (!IsInWorld())
+        return VMAP_INVALID_HEIGHT;
+
+    float collisionHeight = 0.0f;
+    if (Creature* unit = ToCreature())
+    {
+        float scaleMod = unit->GetObjectSize(); // 99% sure about this
+
+        if (unit->IsMounted())
+        {
+            if (CreatureDisplayInfoEntry const* mountDisplayInfo = sCreatureDisplayInfoStore.LookupEntry(unit->GetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID)))
+            {
+                if (CreatureModelDataEntry const* mountModelData = sCreatureModelDataStore.LookupEntry(mountDisplayInfo->Displayid))
+                {
+                    CreatureDisplayInfoEntry const* displayInfo = sCreatureDisplayInfoStore.AssertEntry(unit->GetNativeDisplayId());
+                    CreatureModelDataEntry const* modelData = sCreatureModelDataStore.AssertEntry(displayInfo->ModelId);
+                    float const collisionHeight = scaleMod * (mountModelData->MountHeight + modelData->CollisionHeight * modelData->Scale * displayInfo->scale * 0.5f);
+                    return collisionHeight == 0.0f ? 2.03128f : collisionHeight;
+                }
+            }
+        }
+
+        //! Dismounting case - use basic default model data
+        CreatureDisplayInfoEntry const* displayInfo = sCreatureDisplayInfoStore.AssertEntry(unit->GetNativeDisplayId());
+        CreatureModelDataEntry const* modelData = sCreatureModelDataStore.AssertEntry(displayInfo->ModelId);
+
+        float collisionHeight = scaleMod * modelData->CollisionHeight * modelData->Scale * displayInfo->scale;
+        collisionHeight = collisionHeight == 0.0f ? 2.03128f : collisionHeight;
+    }
+    return std::max<float>(VMAP_INVALID_HEIGHT, GetMap()->GetGameObjectFloor(GetPhaseMask(), GetPositionX(), GetPositionY(), GetPositionZ() + collisionHeight));
+}
